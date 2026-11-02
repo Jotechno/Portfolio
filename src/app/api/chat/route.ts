@@ -158,7 +158,8 @@ export async function POST(request: Request) {
           ? { previous_interaction_id: previousInteractionId }
           : {}),
         generation_config: {
-          max_output_tokens: 4096,
+          max_output_tokens: 2048,
+          thinking_level: "low",
         },
       });
     } catch (firstErr) {
@@ -169,7 +170,8 @@ export async function POST(request: Request) {
           input: userMessage,
           system_instruction: systemInstruction,
           generation_config: {
-            max_output_tokens: 4096,
+            max_output_tokens: 2048,
+            thinking_level: "low",
           },
         });
       } else {
