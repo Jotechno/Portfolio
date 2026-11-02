@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-obsidian: #05060b;
+  --bg-panel: #0b0d17;
+  --bg-panel-elevated: #101424;
+  --neon-purple: #8b5cf6;
+  --neon-violet: #a855f7;
+  --neon-blue: #3b82f6;
+  --neon-cyan: #22d3ee;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: #05060b;
+  color: #f1f5f9;
+}
+
+body {
+  background-color: #05060b;
+  color: #f1f5f9;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+/* Enterprise architectural background grid */
+.bg-enterprise-grid {
+  background-size: 48px 48px;
+  background-image: 
+    linear-gradient(to right, rgba(139, 92, 246, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.055) 1px, transparent 1px);
+}
+
+.bg-enterprise-subgrid {
+  background-size: 16px 16px;
+  background-image: radial-gradient(rgba(139, 92, 246, 0.14) 1px, transparent 1px);
+}
+
+/* Subtle neon glow borders & cards */
+.enterprise-card {
+  background: linear-gradient(180deg, rgba(16, 20, 36, 0.82) 0%, rgba(9, 11, 20, 0.92) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 10px 35px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.enterprise-card:hover {
+  border-color: rgba(168, 85, 247, 0.48);
+  box-shadow: 
+    0 16px 40px -15px rgba(139, 92, 246, 0.22),
+    0 0 25px -5px rgba(59, 130, 246, 0.15),
+    inset 0 1px 0 0 rgba(168, 85, 247, 0.25);
+}
+
+.neon-border-purple {
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 22px -4px rgba(168, 85, 247, 0.32), inset 0 0 12px -6px rgba(168, 85, 247, 0.25);
+}
+
+.neon-border-blue {
+  border: 1px solid rgba(59, 130, 246, 0.42);
+  box-shadow: 0 0 22px -4px rgba(59, 130, 246, 0.32), inset 0 0 12px -6px rgba(59, 130, 246, 0.25);
+}
+
+.neon-border-cyan {
+  border: 1px solid rgba(34, 211, 238, 0.42);
+  box-shadow: 0 0 22px -4px rgba(34, 211, 238, 0.3), inset 0 0 12px -6px rgba(34, 211, 238, 0.22);
+}
+
+.neon-text-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #e9d5ff 35%, #a855f7 68%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.neon-badge-glow {
+  box-shadow: 0 0 16px -2px rgba(168, 85, 247, 0.45);
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #05060b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e243d;
+  border-radius: 4px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b2d66;
+}
