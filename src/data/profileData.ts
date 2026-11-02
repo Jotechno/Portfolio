@@ -85,7 +85,7 @@ export const PROFILE_DATA = {
   githubDisplay: "github.com/Jotechno",
   linkedin: "https://www.linkedin.com/in/juanstam",
   linkedinDisplay: "linkedin.com/in/juanstam",
-  cvUrl: "/Portfolio/CV-JSTT.pdf",
+  cvUrl: `${process.env.NEXT_PUBLIC_BASE_PATH || ""}/CV-JSTT.pdf`,
   availability: "Disponible para Desarrollo Fullstack, Infraestructura y Soporte TI",
   languages: [
     {

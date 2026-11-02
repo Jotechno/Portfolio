@@ -94,32 +94,17 @@ export default function PortfolioSection() {
         user?: GitHubUserProfile | null;
       } | null = null;
 
+      // 1. Primary: Query live GitHub REST API directly so newly created/updated repos appear immediately
       try {
-        const res = await fetch("/Portfolio/api/github", { cache: "no-store" });
-        if (res.ok) {
-          data = await res.json();
-        }
-      } catch {
-        // Attempt relative or direct API fallback
-      }
-
-      if (!data || !data.ok) {
-        try {
-          const resLocal = await fetch("/api/github", { cache: "no-store" });
-          if (resLocal.ok) {
-            data = await resLocal.json();
-          }
-        } catch {
-          // Direct GitHub API fallback
-        }
-      }
-
-      if (!data || !data.ok) {
         const [reposRes, userRes] = await Promise.all([
           fetch(
-            "https://api.github.com/users/Jotechno/repos?sort=updated&direction=desc&per_page=100"
+            `https://api.github.com/users/${PROFILE_DATA.githubUsername}/repos?sort=updated&direction=desc&per_page=100`,
+            { cache: "no-store" }
           ),
-          fetch("https://api.github.com/users/Jotechno"),
+          fetch(
+            `https://api.github.com/users/${PROFILE_DATA.githubUsername}`,
+            { cache: "no-store" }
+          ),
         ]);
 
         if (reposRes.ok) {
@@ -127,11 +112,34 @@ export default function PortfolioSection() {
           const rawUser = userRes.ok
             ? ((await userRes.json()) as GitHubUserProfile)
             : null;
+
+          const publicOwnRepos = rawRepos
+            .filter((r) => !r.fork)
+            .sort(
+              (a, b) =>
+                new Date(b.pushed_at || b.updated_at).getTime() -
+                new Date(a.pushed_at || a.updated_at).getTime()
+            );
+
           data = {
             ok: true,
-            repos: rawRepos.filter((r) => !r.fork),
+            repos: publicOwnRepos,
             user: rawUser,
           };
+        }
+      } catch {
+        // Fallback to pre-rendered / local API snapshot below
+      }
+
+      // 2. Fallback: Use internal / pre-rendered endpoint if GitHub API is unreachable or rate-limited
+      if (!data || !data.ok) {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const fallbackRes = await fetch(`${basePath}/api/github`, {
+          cache: "no-store",
+        }).catch(() => null);
+
+        if (fallbackRes && fallbackRes.ok) {
+          data = await fallbackRes.json().catch(() => null);
         }
       }
 

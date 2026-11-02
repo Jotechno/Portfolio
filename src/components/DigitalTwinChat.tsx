@@ -15,6 +15,7 @@ import {
   MessageSquareText,
 } from "lucide-react";
 import { PROFILE_DATA } from "@/data/profileData";
+import { generateStaticTwinResponse } from "@/lib/staticDigitalTwinEngine";
 
 interface ChatMessage {
   id: string;
@@ -188,19 +189,16 @@ export default function DigitalTwinChat() {
     setIsLoading(true);
 
     try {
-      let response = await fetch("/Portfolio/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: trimmed,
-          previousInteractionId: interactionId,
-        }),
-      }).catch(() => null);
+      const isStaticGithubPages =
+        typeof window !== "undefined" &&
+        window.location.hostname.endsWith("github.io");
 
-      if (!response || !response.ok) {
-        const localAttempt = await fetch("/api/chat", {
+      let replyText: string | null = null;
+      let nextInteractionId: string | null = null;
+
+      if (!isStaticGithubPages) {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const response = await fetch(`${basePath}/api/chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -211,56 +209,43 @@ export default function DigitalTwinChat() {
           }),
         }).catch(() => null);
 
-        if (localAttempt) {
-          response = localAttempt;
+        const contentType = response?.headers.get("content-type") || "";
+        if (response && contentType.includes("application/json")) {
+          const data = (await response.json().catch(() => null)) as {
+            ok?: boolean;
+            reply?: string;
+            interactionId?: string | null;
+            error?: string;
+          } | null;
+
+          if (response.ok && data?.ok && data.reply) {
+            replyText = data.reply;
+            nextInteractionId = data.interactionId ?? null;
+          }
         }
       }
 
-      if (!response) {
-        throw new Error(
-          "El asistente con Gemini API requiere un entorno con servidor activo (Node.js/Vercel). En este despliegue estático puedes escribirme directamente por WhatsApp o correo."
-        );
+      // Seamless fallback for static hosting (GitHub Pages) or static local preview
+      if (!replyText) {
+        await new Promise((resolve) => setTimeout(resolve, 380));
+        replyText = generateStaticTwinResponse(trimmed);
       }
 
-      let data: {
-        ok?: boolean;
-        reply?: string;
-        interactionId?: string | null;
-        error?: string;
-      } = {};
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          "No se recibió una respuesta válida del servidor. Intenta nuevamente."
-        );
-      }
-
-      if (!response.ok || !data.ok || !data.reply) {
-        setError(
-          data.error ||
-            "No fue posible obtener respuesta de mi Gemelo Digital en este momento."
-        );
-        setLastFailedPrompt(trimmed);
-        return;
-      }
-
-      if (data.interactionId) {
-        setInteractionId(data.interactionId);
+      if (nextInteractionId) {
+        setInteractionId(nextInteractionId);
       }
 
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data.reply,
+        content: replyText,
         timestamp: getCurrentTimeLabel(),
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch {
       setError(
-        "Error de conexión al consultar el asistente de IA. Verifica tu red e intenta nuevamente."
+        "Ocurrió un inconveniente inesperado al procesar tu pregunta. Intenta nuevamente."
       );
       setLastFailedPrompt(trimmed);
     } finally {

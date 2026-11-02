@@ -50,20 +50,15 @@ export default function ContactSection() {
     setStatus({ type: "idle" });
 
     try {
-      let response = await fetch("/Portfolio/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          company,
-          inquiryType,
-          message,
-        }),
-      }).catch(() => null);
+      const isStaticGithubPages =
+        typeof window !== "undefined" &&
+        window.location.hostname.endsWith("github.io");
 
-      if (!response || !response.ok) {
-        const localRes = await fetch("/api/contact", {
+      let deliveredViaServer = false;
+
+      if (!isStaticGithubPages) {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const response = await fetch(`${basePath}/api/contact`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -75,24 +70,23 @@ export default function ContactSection() {
           }),
         }).catch(() => null);
 
-        if (localRes) {
-          response = localRes;
+        const contentType = response?.headers.get("content-type") || "";
+        if (response && contentType.includes("application/json")) {
+          const data = await response.json().catch(() => null);
+          if (!response.ok || !data?.ok) {
+            setStatus({
+              type: "error",
+              text:
+                data?.error ||
+                "No fue posible enviar el mensaje. Por favor verifica los campos.",
+            });
+            return;
+          }
+          deliveredViaServer = true;
         }
       }
 
-      if (!response) {
-        throw new Error("Servicio no disponible");
-      }
-
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
-        setStatus({
-          type: "error",
-          text:
-            data.error ||
-            "No fue posible enviar el mensaje. Por favor verifica los campos.",
-        });
-      } else {
+      if (deliveredViaServer) {
         setStatus({
           type: "success",
           text: "Gracias por escribirme. Tu mensaje ha quedado registrado correctamente.",
@@ -101,11 +95,68 @@ export default function ContactSection() {
         setEmail("");
         setCompany("");
         setMessage("");
+        return;
       }
+
+      // Static hosting mode (GitHub Pages): try FormSubmit AJAX relay first
+      let deliveredViaRelay = false;
+      try {
+        const relayRes = await fetch(
+          `https://formsubmit.co/ajax/${PROFILE_DATA.email}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              Nombre: name.trim(),
+              Correo: email.trim(),
+              Empresa: company.trim() || "No especificada",
+              Motivo: inquiryType,
+              Mensaje: message.trim(),
+              _subject: `[Portafolio Web] ${inquiryType} - ${name.trim()}`,
+              _captcha: "false",
+            }),
+          }
+        );
+
+        if (relayRes.ok) {
+          const relayData = await relayRes.json().catch(() => null);
+          if (
+            relayData?.success === "true" ||
+            relayData?.success === true
+          ) {
+            deliveredViaRelay = true;
+          }
+        }
+      } catch {
+        // Fallback to direct mailto dispatch below
+      }
+
+      if (deliveredViaRelay) {
+        setStatus({
+          type: "success",
+          text: `¡Gracias por escribirme! Tu mensaje fue enviado directamente a ${PROFILE_DATA.email}.`,
+        });
+      } else {
+        // Open pre-populated email client so the message is guaranteed to reach Juan
+        const mailtoHref = buildMailtoLink();
+        window.location.href = mailtoHref;
+        setStatus({
+          type: "success",
+          text: `¡Listo! Se abrió tu aplicación de correo con el mensaje preparado para enviármelo directamente a ${PROFILE_DATA.email} (también puedes enviarlo con un clic por WhatsApp).`,
+        });
+      }
+
+      setName("");
+      setEmail("");
+      setCompany("");
+      setMessage("");
     } catch {
       setStatus({
         type: "error",
-        text: "Ocurrió un inconveniente al enviar el formulario. También puedes escribirme directamente por correo o WhatsApp.",
+        text: "Ocurrió un inconveniente al procesar el formulario. Puedes usar el botón de WhatsApp o Abrir en Correo justo debajo.",
       });
     } finally {
       setSubmitting(false);
